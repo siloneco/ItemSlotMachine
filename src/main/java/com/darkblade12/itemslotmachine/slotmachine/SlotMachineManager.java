@@ -3,9 +3,11 @@ package com.darkblade12.itemslotmachine.slotmachine;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -300,6 +302,8 @@ public final class SlotMachineManager extends Manager implements NameGenerator {
         }
     }
 
+    private HashMap<UUID, Long> cooldown = new HashMap<>();
+
     @EventHandler(priority = EventPriority.LOW)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player p = event.getPlayer();
@@ -327,6 +331,13 @@ public final class SlotMachineManager extends Manager implements NameGenerator {
                     if ( !s.isPermittedToUse(p) ) {
                         p.sendMessage(plugin.messageManager.slot_machine_usage_not_allowed());
                     } else {
+
+                        if ( cooldown.getOrDefault(p.getUniqueId(), 0L) + 300L > System.currentTimeMillis() ) {
+                            return;
+                        }
+
+                        cooldown.put(p.getUniqueId(), System.currentTimeMillis());
+
                         if ( s.isBroken() ) {
                             p.sendMessage(plugin.messageManager.slot_machine_broken());
                         } else if ( s.isActive() ) {
@@ -357,5 +368,9 @@ public final class SlotMachineManager extends Manager implements NameGenerator {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerQuit(PlayerQuitEvent event) {
         deactivateUsed(event.getPlayer());
+
+        if ( cooldown.containsKey(event.getPlayer().getUniqueId()) ) {
+            cooldown.remove(event.getPlayer().getUniqueId());
+        }
     }
 }
