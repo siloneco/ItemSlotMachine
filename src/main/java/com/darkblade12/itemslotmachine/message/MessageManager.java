@@ -255,7 +255,7 @@ public final class MessageManager extends Manager implements MessageContainer {
             s.append(itemToString(i));
             a++;
         }
-        return s.length() > 0 ? s.toString() : "§cN/A";
+        return s.length() > 0 ? s.toString() : "";
     }
 
     private String statisticToString(Statistic statistic) {
@@ -536,16 +536,42 @@ public final class MessageManager extends Manager implements MessageContainer {
 
     @Override
     public String slot_machine_won(double money, String currencyName, int itemAmount, String items) {
-        return getMessage("slot_machine_won", true).replace("<money>", Double.toString(money)).replace("<currency_name>", currencyName).replace("<item_amount>", Integer.toString(itemAmount)).replace("<items>", items);
+        if ( money > 0 && (itemAmount <= 0) ) {
+            return getMessage("slot_machine_won_only_money", true)
+                    .replace("<money>", Double.toString(money))
+                    .replace("<currency_name>", currencyName);
+        } else if ( money <= 0 && (itemAmount > 0) ) {
+            return getMessage("slot_machine_won_only_item", true)
+                    .replace("<item_amount>", Integer.toString(itemAmount))
+                    .replace("<items>", items);
+        } else {
+            return getMessage("slot_machine_won", true)
+                    .replace("<money>", Double.toString(money))
+                    .replace("<currency_name>", currencyName)
+                    .replace("<item_amount>", Integer.toString(itemAmount))
+                    .replace("<items>", items);
+        }
     }
 
     public String slot_machine_won(double money, ItemList items) {
-        String message = getMessage("slot_machine_won");
-        int index = message.indexOf("<items>");
+
         String currency = "money";
         if ( Hook.isEnabled() ) {
             currency = money == 1 ? VaultHook.ECONOMY.currencyNameSingular() : VaultHook.ECONOMY.currencyNamePlural();
         }
+
+        String message;
+        int index = -1;
+        if ( money > 0 && (items == null || items.size() <= 0) ) {
+            message = getMessage("slot_machine_won_only_money");
+        } else if ( money <= 0 && (items != null && items.size() > 0) ) {
+            message = getMessage("slot_machine_won_only_item");
+            index = items.size();
+        } else {
+            message = getMessage("slot_machine_won");
+            index = items.size();
+        }
+
         return slot_machine_won(money, currency, items.size(), index == -1 ? "" : itemsToString(items, ChatColor.getLastColors(message.substring(0, index))));
     }
 
